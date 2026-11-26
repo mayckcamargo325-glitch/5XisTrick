@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Local Trainer</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --coke-red: #f40009; 
+    --coke-red-dark: #9c0006;
+    --coke-red-glow: rgba(244, 0, 9, 0.25);
+    --panel: #141418;
+    --panel-active: #1f1112;
+    --border: #2a1516;
+    --text: #f5f5f5;
+    --dim: #a3a3a3;
+    --silver: #d4d4d4;
+    --green: #3ddc84;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(circle at 50% -20%, #2c0002 0%, transparent 60%), var(--bg);
+    color: var(--text);
+    padding-bottom: 80px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(10,10,12,0.9), rgba(20,0,2,0.9));
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { font-size: 1.4rem; font-weight: 800; font-style: italic; display: flex; align-items: center; gap: 0.5rem; color: var(--silver); }
+  .logo span { color: var(--coke-red); font-size: 1.8rem; font-style: normal; text-shadow: 0 0 10px var(--coke-red-glow); }
+  .status-badge { font-size: 0.7rem; font-weight: 700; color: var(--green); display: flex; align-items: center; gap: 0.4rem; text-transform: uppercase; }
+  .status-badge::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  /* Navegação de Páginas */
+  .page {
+    display: none;
+    animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding: 1.2rem;
+  }
+  .page.active { display: block; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* Voltar */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    color: var(--dim); font-size: 0.85rem; font-weight: 600;
+    text-decoration: none; margin-bottom: 1rem; cursor: pointer;
+    background: none; border: none; padding: 0; transition: color 0.2s;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  /* Hero */
+  .hero { padding: 1rem 0 2rem; text-align: center; }
+  .hero h1 { margin: 0.4rem 0; font-size: 2.2rem; line-height: 1.2; font-weight: 800; color: var(--silver); text-transform: uppercase; letter-spacing: 0.02em; }
+  .hero h1 span { color: var(--coke-red); }
+
+  /* Lista de recursos (Home) */
+  .feature-list { display: flex; flex-direction: column; gap: 0.8rem; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1rem; display: flex; align-items: center; gap: 1rem;
+    cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
+    background: var(--coke-red); opacity: 0; transition: opacity 0.2s;
+  }
+  .card:active { background: var(--panel-active); }
+  .card:hover { border-color: rgba(244, 0, 9, 0.4); }
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(244, 0, 9, 0.1); color: var(--coke-red);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; border: 1px solid rgba(244, 0, 9, 0.2);
+  }
+  .card-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .card-content { flex: 1; }
+  .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text); }
+  .card-desc { font-size: 0.8rem; color: var(--dim); }
+  .card-arrow { color: var(--dim); font-size: 1.2rem; }
+
+  /* Detalhes da Página (Boneco Lento / 5xisTrick) */
+  .detail-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.2rem; margin-bottom: 1rem;
+  }
+  .detail-header {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;
+  }
+  .detail-header .card-icon { width: 56px; height: 56px; }
+  .detail-header h2 { margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--text); }
+  .detail-header p { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--dim); }
+  
+  .detail-section {
+    border-top: 1px solid rgba(244,0,9,0.15); padding-top: 1.2rem; margin-top: 1.2rem;
+  }
+  .detail-section h3 { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 700; color: var(--coke-red); text-transform: uppercase; letter-spacing: 0.05em; }
+  .detail-section p { margin: 0; font-size: 0.85rem; color: var(--dim); line-height: 1.5; }
+
+  .warning-box {
+    background: rgba(255, 184, 77, 0.1); border: 1px solid rgba(255, 184, 77, 0.3);
+    border-radius: 10px; padding: 1rem; margin-top: 1.5rem;
+  }
+  .warning-box h4 { margin: 0 0 0.4rem; font-size: 0.9rem; color: #ffc857; display: flex; align-items: center; gap: 0.4rem; }
+  .warning-box p { margin: 0; font-size: 0.8rem; color: #cca352; line-height: 1.4; }
+
+  /* Toggles */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-row .label { font-size: 1rem; font-weight: 600; }
+  .switch { position: relative; width: 50px; height: 28px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .track { position: absolute; inset: 0; border-radius: 28px; background: #333; transition: 0.3s; border: 1px solid #444; }
+  .thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--silver); transition: 0.3s; }
+  .switch input:checked + .track { background: var(--coke-red-dark); border-color: var(--coke-red); }
+  .switch input:checked + .track + .thumb { left: 25px; background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+
+  /* Controles 5xisTrick */
+  .slider-container { padding: 1rem 0; }
+  .slider-header { display: flex; justify-content: space-between; margin-bottom: 0.8rem; font-size: 0.9rem; font-weight: 600; }
+  .slider-header span:last-child { color: var(--coke-red); }
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; background: transparent;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    width: 100%; height: 6px; cursor: pointer; background: #333; border-radius: 3px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    height: 20px; width: 20px; border-radius: 50%; background: var(--coke-red);
+    cursor: pointer; -webkit-appearance: none; margin-top: -7px;
+    box-shadow: 0 0 10px var(--coke-red-glow);
+  }
+
+  /* FPS / Hz Grid */
+  .fps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem; }
+  .fps-btn {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.2rem; text-align: center; cursor: pointer; transition: all 0.2s;
+  }
+  .fps-btn .val { font-size: 1.4rem; font-weight: 800; color: var(--silver); display: block; margin-bottom: 0.2rem; }
+  .fps-btn .lbl { font-size: 0.75rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .fps-btn:hover { border-color: rgba(244,0,9,0.4); }
+  .fps-btn.active {
+    background: linear-gradient(180deg, rgba(244,0,9,0.15), rgba(244,0,9,0.05));
+    border-color: var(--coke-red); box-shadow: 0 0 15px rgba(244,0,9,0.15) inset;
+  }
+  .fps-btn.active .val { color: var(--coke-red); }
+
+  /* Botão Injetar */
+  .inject-btn {
+    width: 100%; padding: 1.2rem; border-radius: 12px; border: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--panel), #0d0d10);
+    color: var(--text); font-size: 1rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 0.8rem; margin-top: 1rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .inject-btn:active { transform: translateY(1px); }
+  .inject-btn.max { 
+    border-color: rgba(244, 0, 9, 0.3); 
+    background: linear-gradient(180deg, rgba(244, 0, 9, 0.1), transparent);
+    margin-top: 2rem;
+  }
+  .inject-btn svg { width: 24px; height: 24px; stroke: var(--coke-red); stroke-width: 2; fill: none; }
+
+  /* Menu inferior */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,12,0.95); backdrop-filter: blur(15px);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; padding: 0.8rem 0;
+    z-index: 10;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    color: var(--dim); font-size: 0.7rem; font-weight: 600; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-item svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-item.active { color: var(--coke-red); }
+
+  /* Overlay */
+  #overlay {
+    position: fixed; inset: 0; background: rgba(5,0,0,0.9); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  #overlay.show { display: flex; }
+  .spinner-box { text-align: center; width: 85%; max-width: 320px; }
+  .spinner {
+    width: 70px; height: 70px; border-radius: 50%;
+    border: 4px solid rgba(244, 0, 9, 0.1); border-top-color: var(--coke-red);
+    animation: spin 1s linear infinite; margin: 0 auto 1.5rem;
+    box-shadow: 0 0 20px rgba(244,0,9,0.2) inset;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-text { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff; letter-spacing: 0.05em; }
+  .spinner-sub { font-size: 0.85rem; color: var(--dim); margin-bottom: 1.5rem; }
+  .bar-bg { height: 6px; background: #222; border-radius: 4px; overflow: hidden; border: 1px solid #333; }
+  .bar-fill { height: 100%; width: 0; background: var(--coke-red); transition: width 0.3s ease; box-shadow: 0 0 10px var(--coke-red); }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="logo"><span>X</span> LOCAL</div>
+    <div class="status-badge">ONLINE</div>
+  </header>
+
+  <!-- PÁGINA 1: HOME -->
+  <div id="page-home" class="page active">
+    <div class="hero">
+      <h1>5XISTRICK <span>O AMBIENTE PERFEITO.</span></h1>
+    </div>
+
+    <div class="feature-list">
+      <!-- Boneco Lento -->
+      <div class="card" onclick="navTo('page-slowmo')">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">Boneco Lento</div>
+          <div class="card-desc">Controle de movimentação.</div>
+        </div>
+        <div class="card-arrow">›</div>
+      </div>
+
+      <!-- 5xisTrick -->
+      <div class="card" onclick="navTo('page-trick')">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2"></path></svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">5xisTrick</div>
+          <div class="card-desc">Ajustes de precisão, redes e FPS.</div>
+        </div>
+        <div class="card-arrow">›</div>
+      </div>
+
+      <!-- NOVO: Resfriar CPU -->
+      <div class="card" onclick="navTo('page-coolcpu')">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3m6-3v3M9 20v3m6-3v3M1 9h3m-3 6h3m16-6h3m-3 6h3"></path></svg>
+        </div>
+        <div class="card-content">
+          <div class="card-title">Resfriar CPU</div>
+          <div class="card-desc">Reduz temperatura e melhora desempenho.</div>
+        </div>
+        <div class="card-arrow">›</div>
+      </div>
+      
+      <!-- Injeção -->
+      <button class="inject-btn max" data-app="com.dts.freefiremax">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+        Apply to Free Fire MAX
+      </button>
+      <button class="inject-btn" data-app="com.dts.freefireth">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+        Apply to Free Fire
+      </button>
+    </div>
+  </div>
+
+  <!-- PÁGINA 2: BONECO LENTO -->
+  <div id="page-slowmo" class="page">
+    <button class="back-btn" onclick="navTo('page-home')">‹ Voltar ao início</button>
+    
+    <div class="detail-box">
+      <div class="detail-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>
+        </div>
+        <div>
+          <h2>Boneco Lento</h2>
+          <p>Controle de movimentação</p>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Como funciona</h3>
+        <p>O Boneco Lento altera o multiplicador de tempo (timeScale) do processo alvo local. Isso faz com que a simulação de tick e a movimentação dos oponentes sejam processadas em câmera lenta, permitindo que você ajuste sua mira com precisão.</p>
+      </div>
+
+      <div class="toggle-row" style="margin-top: 1rem;">
+        <div class="label">Inativo / Ativo</div>
+        <label class="switch"><input type="checkbox" id="slowmoToggle"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+
+      <div class="slider-container" id="slowmoControls" style="opacity: 0.5; pointer-events: none;">
+        <div class="slider-header">
+          <span>Velocidade</span>
+          <span id="slowmoValTxt">100%</span>
+        </div>
+        <input type="range" id="slowmoRange" min="10" max="100" value="100" step="5">
+      </div>
+
+      <div class="warning-box">
+        <h4>⚠ Para desativar 100% é obrigatório reiniciar</h4>
+        <p>Feche o processo alvo por completo (remova da lista de apps recentes) e abra de novo. O controle salva apenas uma preferência neste app local e altera o funcionamento do alvo.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PÁGINA 3: 5XISTRICK -->
+  <div id="page-trick" class="page">
+    <button class="back-btn" onclick="navTo('page-home')">‹ Voltar ao início</button>
+    
+    <div class="detail-box">
+      <div class="detail-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2"></path></svg>
+        </div>
+        <div>
+          <h2>5xisTrick</h2>
+          <p>Ajustes de precisão, redes e FPS.</p>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Ajustes de Mira e Rede</h3>
+      </div>
+
+      <div class="toggle-row">
+        <div class="label">Aumentar precisão</div>
+        <label class="switch"><input type="checkbox" data-flag="accuracy"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div class="label">Remover lag</div>
+        <label class="switch"><input type="checkbox" data-flag="lag"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div class="label">Remover recuo</div>
+        <label class="switch"><input type="checkbox" data-flag="recoil"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div class="label">Calibrar sensibilidade</div>
+        <label class="switch"><input type="checkbox" data-flag="sens"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+
+      <div class="detail-section" style="margin-top: 1.5rem;">
+        <h3>FPS / Hz Boost</h3>
+        <p>Selecione a taxa de atualização desejada para o loop de renderização.</p>
+      </div>
+      
+      <div class="fps-grid">
+        <div class="fps-btn" data-hz="60"><span class="val">60</span><span class="lbl">Hz / FPS</span></div>
+        <div class="fps-btn" data-hz="90"><span class="val">90</span><span class="lbl">Hz / FPS</span></div>
+        <div class="fps-btn" data-hz="120"><span class="val">120</span><span class="lbl">Hz / FPS</span></div>
+        <div class="fps-btn" data-hz="144"><span class="val">144</span><span class="lbl">Hz / FPS</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOVA PÁGINA: RESFRIAR CPU -->
+  <div id="page-coolcpu" class="page">
+    <button class="back-btn" onclick="navTo('page-home')">‹ Voltar ao início</button>
+    
+    <div class="detail-box">
+      <div class="detail-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3m6-3v3M9 20v3m6-3v3M1 9h3m-3 6h3m16-6h3m-3 6h3"></path></svg>
+        </div>
+        <div>
+          <h2>Resfriar CPU</h2>
+          <p>Reduz temperatura e melhora desempenho</p>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Como funciona</h3>
+        <p>O Resfriar CPU aplica ajustes no gerenciamento de energia e prioridade dos processos, reduzindo o estresse do processador em segundo plano. Isso ajuda a manter a temperatura estável e evita throttling durante as partidas.</p>
+      </div>
+
+      <div class="toggle-row" style="margin-top: 1rem;">
+        <div class="label">Resfriar CPU</div>
+        <label class="switch"><input type="checkbox" id="coolCpuToggle"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+
+      <div class="slider-container" id="coolCpuControls" style="opacity: 0.5; pointer-events: none;">
+        <div class="slider-header">
+          <span>Intensidade do resfriamento</span>
+          <span id="coolCpuValTxt">50%</span>
+        </div>
+        <input type="range" id="coolCpuRange" min="10" max="100" value="50" step="5">
+      </div>
+
+      <div class="warning-box">
+        <h4>⚠ Para desativar 100% é recomendado reiniciar</h4>
+        <p>Ao desativar, feche o jogo e o app local completamente para que os ajustes de energia voltem ao padrão. Os efeitos são aplicados em tempo real enquanto o alvo estiver em execução.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu Inferior -->
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item active" onclick="navTo('page-home'); return false;">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      Início
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+      Ranking
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8m-4-4h8"></path></svg>
+      Premium
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      Sensi
+    </a>
+  </nav>
+
+  <!-- Overlay de Injeção -->
+  <div id="overlay">
+    <div class="spinner-box">
+      <div class="spinner"></div>
+      <div class="spinner-text" id="ovTitle">INJETANDO…</div>
+      <div class="spinner-sub" id="ovSub">Preparando alvo</div>
+      <div class="bar-bg"><div class="bar-fill" id="ovBar"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const WS_URL = "ws://127.0.0.1:8765";
+    let ws = null;
+    
+    // Estado global
+    const settings = {
+      slowmo: 1.0,
+      accuracy: false,
+      lag: false,
+      recoil: false,
+      sens: false,
+      hz: 0,
+      coolcpu: false,
+      coolcpuIntensity: 50
+    };
+
+    // Lógica de Navegação SPA
+    function navTo(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    // Slowmo Logic
+    const slowToggle = document.getElementById('slowmoToggle');
+    const slowControls = document.getElementById('slowmoControls');
+    const slowRange = document.getElementById('slowmoRange');
+    const slowTxt = document.getElementById('slowmoValTxt');
+
+    slowToggle.addEventListener('change', (e) => {
+      const isActive = e.target.checked;
+      slowControls.style.opacity = isActive ? '1' : '0.5';
+      slowControls.style.pointerEvents = isActive ? 'auto' : 'none';
+      settings.slowmo = isActive ? (parseInt(slowRange.value) / 100) : 1.0;
+      pushSettings();
+    });
+
+    slowRange.addEventListener('input', (e) => {
+      slowTxt.textContent = e.target.value + '%';
+      if (slowToggle.checked) {
+        settings.slowmo = parseInt(e.target.value) / 100;
+      }
+    });
+
+    slowRange.addEventListener('change', () => {
+      if (slowToggle.checked) pushSettings();
+    });
+
+    // 5xisTrick Logic
+    document.querySelectorAll('input[data-flag]').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        settings[e.target.dataset.flag] = e.target.checked;
+        pushSettings();
+      });
+    });
+
+    document.querySelectorAll('.fps-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.fps-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        settings.hz = parseInt(btn.dataset.hz);
+        pushSettings();
+      });
+    });
+
+    // Resfriar CPU Logic
+    const coolCpuToggle = document.getElementById('coolCpuToggle');
+    const coolCpuControls = document.getElementById('coolCpuControls');
+    const coolCpuRange = document.getElementById('coolCpuRange');
+    const coolCpuTxt = document.getElementById('coolCpuValTxt');
+
+    coolCpuToggle.addEventListener('change', (e) => {
+      const isActive = e.target.checked;
+      coolCpuControls.style.opacity = isActive ? '1' : '0.5';
+      coolCpuControls.style.pointerEvents = isActive ? 'auto' : 'none';
+      settings.coolcpu = isActive;
+      settings.coolcpuIntensity = parseInt(coolCpuRange.value);
+      pushSettings();
+    });
+
+    coolCpuRange.addEventListener('input', (e) => {
+      coolCpuTxt.textContent = e.target.value + '%';
+      settings.coolcpuIntensity = parseInt(e.target.value);
+    });
+
+    coolCpuRange.addEventListener('change', () => {
+      if (coolCpuToggle.checked) pushSettings();
+    });
+
+    // WebSocket
+    function connectWS() {
+      if (ws && ws.readyState === WebSocket.OPEN) return;
+      ws = new WebSocket(WS_URL);
+      ws.onopen = () => console.log("[+] Conectado à bridge");
+      ws.onclose = () => console.log("[-] Bridge fechada");
+      ws.onerror = () => console.warn("[!] Erro na bridge (server.py rodando?)");
+    }
+
+    function pushSettings() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connectWS();
+        return;
+      }
+      ws.send(JSON.stringify({ cmd: "settings", settings }));
+    }
+
+    // Injeção
+    const overlay = document.getElementById('overlay');
+    const ovTitle = document.getElementById('ovTitle');
+    const ovSub = document.getElementById('ovSub');
+    const ovBar = document.getElementById('ovBar');
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    document.querySelectorAll('.inject-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pkg = btn.dataset.app;
+        const name = pkg.includes('max') ? 'Free Fire MAX' : 'Free Fire';
+        
+        overlay.classList.add('show');
+        ovTitle.textContent = `INJETANDO EM ${name.toUpperCase()}`;
+        ovBar.style.width = '0%';
+
+        ovSub.textContent = "Estabelecendo ponte local…";
+        ovBar.style.width = '20%';
+        connectWS();
+        await sleep(600);
+
+        ovSub.textContent = `Lançando ${name}…`;
+        ovBar.style.width = '50%';
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ 
+            cmd: "attach", 
+            target: pkg, 
+            mode: "spawn", 
+            settings 
+          }));
+        }
+        await sleep(800);
+
+        ovSub.textContent = "Aplicando configurações…";
+        ovBar.style.width = '80%';
+        pushSettings();
+        await sleep(600);
+
+        ovSub.textContent = "Pronto. Jogo aberto.";
+        ovBar.style.width = '100%';
+        await sleep(800);
+        
+        overlay.classList.remove('show');
+        ovBar.style.width = '0%';
+      });
+    });
+  </script>
+</body>
+</html>
